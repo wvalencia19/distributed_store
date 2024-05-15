@@ -32,6 +32,7 @@ _out/
 build/
 bin/
 pkg/
+wvnetwork/
 
 # Ignore IDEA IDE files
 .idea/
