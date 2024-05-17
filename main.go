@@ -1,35 +1,39 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
+	"github.com/wvalencia19/distribuited_store/data"
 	"github.com/wvalencia19/distribuited_store/p2p"
 )
 
-func OnPeer(peer p2p.Peer) error {
-	fmt.Println("doing some logic with the peer outside of TCPTransport")
-	return nil
+func makeServer(listedAddr string, nodes ...string) *FileServer {
+	tcpTransportOpts := p2p.TCPTransportOpts{
+		ListenAddr:    listedAddr,
+		HandshakeFunc: p2p.NOPHandshakeFunc,
+		Decoder:       &p2p.DefaultDecoder{},
+	}
+
+	tr := p2p.NewTCPTransport(tcpTransportOpts)
+
+	fileserverOpts := FileServerOpts{
+		StorageRoot:       listedAddr + "_network",
+		PathTransformFunc: data.CASPathTransformFun,
+		Transport:         tr,
+		BootstrapNodes:    nodes,
+	}
+
+	return NewFileServer(fileserverOpts)
 }
 
 func main() {
-	tcpOpts := p2p.TCPTransportOpts{
-		ListenAddr:    ":3000",
-		HandshakeFunc: p2p.NOPHandshakeFunc,
-		Decoder:       &p2p.DefaultDecoder{},
-		OnPeer:        OnPeer,
-	}
-	tr := p2p.NewTCPTransport(tcpOpts)
+	s1 := makeServer(":3000", "")
+	s2 := makeServer(":4000", ":3000")
 
 	go func() {
-		for {
-			msg := <-tr.Consume()
-			fmt.Printf("%+v\n", msg)
-		}
+		log.Fatal(s1.Start())
 	}()
 
-	if err := tr.ListenAndAccept(); err != nil {
-		log.Fatal(err)
-	}
-	select {}
+	s2.Start()
+
 }

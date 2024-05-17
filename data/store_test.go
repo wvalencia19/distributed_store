@@ -31,15 +31,14 @@ func TestDeleteKey(t *testing.T) {
 }
 
 func TestStore(t *testing.T) {
-	opts := StoreOpts{
-		PathTransformFunc: CASPathTransformFun,
-	}
+	s := newStore()
+	defer teardown(t, s)
 
-	s := NewStore(opts)
 	key := "momspecials"
 	data := []byte("some jpg bytes")
 	assert.Nil(t, s.writeStream(key, bytes.NewReader(data)))
 
+	assert.True(t, s.Has(key))
 	r, err := s.Read(key)
 	assert.Nil(t, err)
 
@@ -47,4 +46,16 @@ func TestStore(t *testing.T) {
 	assert.Equal(t, string(data), string(b))
 
 	assert.Nil(t, s.Delete(key))
+}
+
+func newStore() *Store {
+	opts := StoreOpts{
+		PathTransformFunc: CASPathTransformFun,
+	}
+
+	return NewStore(opts)
+}
+
+func teardown(t *testing.T, s *Store) {
+	assert.Nil(t, s.Clear())
 }
