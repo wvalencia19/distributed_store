@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"log"
+	"time"
 
 	"github.com/wvalencia19/distribuited_store/data"
 	"github.com/wvalencia19/distribuited_store/p2p"
@@ -12,6 +14,7 @@ func makeServer(listedAddr string, nodes ...string) *FileServer {
 		ListenAddr:    listedAddr,
 		HandshakeFunc: p2p.NOPHandshakeFunc,
 		Decoder:       &p2p.DefaultDecoder{},
+		// OnPeer: ,
 	}
 
 	tr := p2p.NewTCPTransport(tcpTransportOpts)
@@ -23,7 +26,10 @@ func makeServer(listedAddr string, nodes ...string) *FileServer {
 		BootstrapNodes:    nodes,
 	}
 
-	return NewFileServer(fileserverOpts)
+	s := NewFileServer(fileserverOpts)
+	tr.OnPeer = s.OnPeer
+
+	return s
 }
 
 func main() {
@@ -34,6 +40,14 @@ func main() {
 		log.Fatal(s1.Start())
 	}()
 
-	s2.Start()
+	time.Sleep(1 * time.Second)
 
+	go s2.Start()
+
+	time.Sleep(1 * time.Second)
+
+	data := bytes.NewReader([]byte("my big data file here"))
+	s2.StoreData("myprivatedata", data)
+
+	select {}
 }

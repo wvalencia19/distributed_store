@@ -1,7 +1,10 @@
 package p2p
 
+import "net"
+
 // Represents the remote node
 type Peer interface {
+	net.Conn
 	Close() error
 }
 
